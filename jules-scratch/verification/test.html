@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Kiptify Test</title>
+</head>
+<body>
+    <h1>Kiptify Test Page</h1>
+    <form id="test-form">
+        <label for="username">Username:</label><br>
+        <input type="text" id="username" name="username"><br>
+        <label for="password">Password:</label><br>
+        <input type="password" id="password" name="password"><br><br>
+        <input type="submit" value="Submit">
+    </form>
+    <script>
+        // Mock GM functions for testing environment
+        window.GM_getValue = async function(key, defaultValue) {
+            const value = window.localStorage.getItem(key);
+            return value ? JSON.parse(value) : defaultValue;
+        };
+        window.GM_setValue = async function(key, value) {
+            window.localStorage.setItem(key, JSON.stringify(value));
+        };
+        window.GM_download = function(options) {
+            console.log('GM_download mock called with:', options);
+        };
+    </script>
+    <script src="../../kiptify-userscript.js"></script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Kiptify | Save & Restore Web Forms
-// @namespace    https://github.com/your-username/kiptify
+// @namespace    https://github.com/Vanguardly/kiptify
 // @version      2.8.0
 // @description  Save and restore web forms in a single click.
 // @author       Vanguardly
@@ -155,12 +155,6 @@
         }
         showToast(`Restored: ${stateData.name}. ${updateCount} fields updated.`, 'success');
     }
-    function downloadFormData(identifier, state) {
-        const filename = `${identifier.split('/')[0]}_${state.name.replace(/[^a-z0-9]/gi, '-')}.json`;
-        const json = JSON.stringify(state, null, 2);
-        const blob = new Blob([json], { type: 'application/json' });
-        if (typeof GM_download === 'function') GM_download({ url: URL.createObjectURL(blob), name: filename, saveAs: true });
-    }
 
     // -----------------------------------------------------
     // MODULE 4: UI & STYLES
@@ -173,32 +167,44 @@
             @import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@700&family=Nunito:wght@400;600;700&display=swap');
             @import url('https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined');
 
-            #kiptify-app-container, .kiptify-menu { all: initial; }
-            #kiptify-app-container *, .kiptify-menu * { font-family: 'Nunito', sans-serif; box-sizing: border-box; }
-
-            .font-brand { font-family: 'Ubuntu', sans-serif !important; font-weight: 700; }
-            .material-icons, .material-icons-outlined {
+            .kiptify-form .font-brand { font-family: 'Ubuntu', sans-serif !important; font-weight: 700; }
+            .kiptify-form .material-icons, .kiptify-form .material-icons-outlined {
                 font-family: 'Material Icons' !important; font-weight: normal; font-style: normal; line-height: 1; letter-spacing: normal; text-transform: none;
                 display: inline-block; white-space: nowrap; word-wrap: normal; direction: ltr; -webkit-font-smoothing: antialiased;
             }
-            .material-icons-outlined { font-family: 'Material Icons Outlined' !important; }
+            .kiptify-form .material-icons-outlined { font-family: 'Material Icons Outlined' !important; }
 
             /* Trigger Icon */
-            .kiptify-trigger {
-                background: ${color.primary} !important; border: 1px solid rgba(255,255,255,0.7) !important;
-                color: ${color.white}; border-radius: 9999px;
-                transition: all 0.2s ease-in-out !important; cursor: pointer;
+            .kiptify-form .kiptify-trigger {
+                display: flex;
+                position: absolute;
+                align-items: center;
+                justify-content: center;
+                z-index: 9999;
+                opacity: 0;
+                pointer-events: auto;
+                background: ${color.primary} !important;
+                border: 1px solid rgba(255,255,255,0.7) !important;
+                color: ${color.white};
+                border-radius: 9999px;
+                cursor: pointer;
+                transition: all 0.2s ease-in-out !important;
             }
-            .kiptify-trigger:hover { filter: brightness(1.1); }
+            .kiptify-form .kiptify-trigger.kiptify-visible { opacity: 0.8; }
+            .kiptify-form .kiptify-trigger:hover { filter: brightness(1.1); }
 
             /* Main Menu */
-            .kiptify-menu {
+            .kiptify-form .kiptify-menu {
+                display: block;
+                position: absolute;
+                z-index: 10000;
+                visibility: hidden;
                 min-width: 420px;
-                background: linear-gradient(145deg, rgba(255, 255, 255, 0.8), rgba(245, 245, 245, 0.7)) !important;
-                backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-                border: 1px solid rgba(255,255,255,0.6); border-radius: 16px !important;
+                background: #f7f7f7 !important;
+                border-radius: 12px !important;
                 box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15) !important;
-                padding: 1rem;
+                padding: 0.5rem;
+                color: ${color.textDark};
             }
             .kiptify-menu-content { overflow-y: auto; padding: 0.25rem; }
 
@@ -439,7 +445,6 @@
         const restoreIconBtn = createBtn('restore', 'Restore', 'restore', 'large', restoreAction);
 
         buttons.appendChild(createBtn('edit', 'Edit Name', 'edit', 'small', () => showEditModal(formId, state, updateCallback)));
-        buttons.appendChild(createBtn('download', 'Download JSON', 'download', 'small', () => downloadFormData(formId, state)));
         buttons.appendChild(createBtn('delete', 'Delete Entry', 'delete', 'small', async () => {
             if (confirm(`Delete "${state.name}"? This cannot be undone.`)) {
                 await deleteFormState(formId, state.uid);
@@ -489,11 +494,24 @@
         const contentContainer = menu.querySelector('.kiptify-menu-content');
         const settings = await getSettings();
 
+        // Position menu next to the trigger icon
+        const iconRect = triggerElement.getBoundingClientRect();
+        const formRect = form.getBoundingClientRect();
+        const spacing = 5; // 5px space between icon and menu
+
+        if (settings.iconPosition.includes('top')) {
+            menu.style.top = `${iconRect.bottom - formRect.top + spacing}px`;
+        } else { // bottom
+            menu.style.bottom = `${formRect.bottom - iconRect.top + spacing}px`;
+        }
+
+        if (settings.iconPosition.includes('left')) {
+            menu.style.left = `${iconRect.left - formRect.left}px`;
+        } else { // right
+            menu.style.right = `${formRect.right - iconRect.right}px`;
+        }
+
         menu.style.visibility = 'visible';
-        if(settings.iconPosition.includes('top')) menu.style.top = '0';
-        if(settings.iconPosition.includes('bottom')) menu.style.bottom = '0';
-        if(settings.iconPosition.includes('left')) menu.style.left = '0';
-        if(settings.iconPosition.includes('right')) menu.style.right = '0';
 
         const menuRect = menu.getBoundingClientRect();
         const availableHeight = window.innerHeight - menuRect.top - 60;
@@ -622,20 +640,12 @@
     // MODULE 6: MAIN EXECUTION
     // -----------------------------------------------------
 
-    function createAppComponent() {
-        if (document.getElementById('kiptify-app-container')) return;
-        const appContainer = document.createElement('div');
-        appContainer.id = 'kiptify-app-container';
-        appContainer.style.cssText = `position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 999999;`;
-        document.body.appendChild(appContainer);
-    }
-
     function attachIcon(form) {
         if (form.querySelector('.kiptify-trigger')) return;
+        form.classList.add('kiptify-form');
         const iconDiv = document.createElement('div');
         iconDiv.className = 'kiptify-trigger material-icons';
-        iconDiv.style.cssText = `position: absolute; display: flex; align-items: center; justify-content: center; z-index: 9999; opacity: 0; pointer-events: auto;`;
-        iconDiv.innerHTML = 'restore';
+        iconDiv.textContent = 'restore';
         iconDiv.title = 'Kiptify: Save/Restore Form';
 
         iconDiv.addEventListener('click', (e) => {
@@ -648,15 +658,21 @@
         }
 
         let timeout;
-        form.addEventListener('mouseenter', () => { clearTimeout(timeout); iconDiv.style.opacity = '0.8'; });
-        form.addEventListener('mouseleave', () => { timeout = setTimeout(() => iconDiv.style.opacity = '0', 300); });
+        form.addEventListener('mouseenter', () => {
+            clearTimeout(timeout);
+            iconDiv.classList.add('kiptify-visible');
+        });
+        form.addEventListener('mouseleave', () => {
+            timeout = setTimeout(() => {
+                iconDiv.classList.remove('kiptify-visible');
+            }, 300);
+        });
 
         form.appendChild(iconDiv);
         updateIconPosition(form);
     }
 
     applyStyles();
-    createAppComponent();
     document.querySelectorAll('form').forEach(attachIcon);
 
     const observer = new MutationObserver(mutations => {
