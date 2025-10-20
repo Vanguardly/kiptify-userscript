@@ -200,13 +200,17 @@
                 z-index: 10000;
                 visibility: hidden;
                 min-width: 420px;
-                background: #f7f7f7 !important;
-                border-radius: 12px !important;
-                box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15) !important;
-                padding: 0.5rem;
+                background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.5)) !important;
+                background: rgba(255, 255, 255, 0.5);
+                border-radius: 16px;
+                box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 1);
+                padding: 1rem;
                 color: ${color.textDark};
             }
-            .kiptify-menu-content { overflow-y: auto; padding: 0.25rem; }
+            .kiptify-menu-content { overflow-y: auto; padding: 0.5rem; }
 
             /* Tabs */
             .kiptify-tab-container { border-bottom: 2px solid rgba(0,0,0,0.05); display: flex; }
@@ -231,7 +235,7 @@
             .kiptify-row-main { flex-grow: 1; padding: 0.25rem; }
             .kiptify-row-name { font-weight: 700; font-size: 0.875rem; color: ${color.textDark}; display: flex; align-items: center; }
             .kiptify-row-name .material-icons-outlined { color: ${color.secondary}; margin-left: 0.5rem; font-size: 16px; }
-            .kiptify-row-meta { font-size: 0.7rem; color: ${color.textLight}; }
+            .kiptify-row-meta { font-size: 0.7rem; color: ${color.textLight}; text-align: left; }
             .kiptify-row-actions { display: flex; align-items: center; gap: 0.5rem; }
             
             /* Action Buttons (in rows) */
@@ -274,7 +278,9 @@
             /* Modal */
             .kiptify-modal-overlay {
                 position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: auto;
-                background-color: rgba(0,0,0,0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+                background: rgba(255, 255, 255, 0.5);
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
                 z-index: 100001; display: flex; justify-content: center; align-items: center;
             }
             .kiptify-modal-content {
@@ -309,7 +315,7 @@
 
             /* Save Menu Specifics */
             .kiptify-menu-header { display: flex; justify-content: space-between; align-items: center; padding: 0.25rem 0.5rem; }
-            .kiptify-menu-title { font-size: 1.25rem; color: ${color.textDark}; }
+            .kiptify-menu-title { font-size: 26px; font-weight: bold; color: ${color.textDark}; }
             .kiptify-menu-title .kiptify-title-dot { color: ${color.primary}; }
             .kiptify-save-btn-group { display: flex; align-items: center; border-radius: 0.5rem; background-color: ${color.primary}; }
             #kiptify-save-btn {
@@ -333,11 +339,47 @@
             .kiptify-save-hidden-label .material-icons-outlined { font-size: 16px; margin-right: 0.25rem; }
 
             /* Settings Tab */
-            .kiptify-settings-content { padding: 0.5rem; }
-            .kiptify-settings-group { margin-bottom: 1rem; }
-            .kiptify-settings-label { display: block; font-weight: 600; font-size: 0.875rem; color: ${color.textMedium}; margin-bottom: 0.5rem; }
-            .kiptify-settings-radio-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; font-size: 0.875rem; }
-            .kiptify-settings-radio-label { display: flex; align-items: center; cursor: pointer; }
+            .kiptify-settings-content { padding: 1rem; }
+            .kiptify-settings-group {
+                background: rgba(255, 255, 255, 0.5);
+                border-radius: 8px;
+                padding: 1rem;
+                margin-bottom: 1rem;
+                border: 1px solid rgba(255, 255, 255, 0.8);
+            }
+            .kiptify-settings-label {
+                display: block;
+                font-weight: 700;
+                font-size: 0.875rem;
+                color: ${color.textDark};
+                margin-bottom: 0.75rem;
+                display: flex;
+                align-items: center;
+            }
+            .kiptify-settings-label .material-icons-outlined {
+                margin-right: 0.5rem;
+                color: ${color.secondary};
+            }
+            .kiptify-settings-radio-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.75rem;
+                font-size: 0.875rem;
+            }
+            .kiptify-settings-radio-label {
+                background: rgba(255, 255, 255, 0.7);
+                padding: 0.75rem;
+                border-radius: 6px;
+                display: flex;
+                align-items: center;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                border: 1px solid transparent;
+            }
+            .kiptify-settings-radio-label:hover {
+                background: rgba(255, 255, 255, 1);
+                border-color: ${color.highlight};
+            }
             .kiptify-settings-radio-label input { margin-right: 0.5rem; }
             .kiptify-no-entries-msg { text-align: center; color: ${color.textLight}; font-size: 0.875rem; padding: 2rem 0; }
         `;
@@ -571,7 +613,10 @@
         tabs.settings.content.className = 'kiptify-settings-content';
         tabs.settings.content.innerHTML = `
             <div class="kiptify-settings-group">
-                <label class="kiptify-settings-label">Icon Position</label>
+                <label class="kiptify-settings-label">
+                    <span class="material-icons-outlined">control_camera</span>
+                    Icon Position
+                </label>
                 <div class="kiptify-settings-radio-grid">
                     <label class="kiptify-settings-radio-label"><input type="radio" name="kiptify-pos" value="top-right">Top Right</label>
                     <label class="kiptify-settings-radio-label"><input type="radio" name="kiptify-pos" value="top-left">Top Left</label>
@@ -580,16 +625,28 @@
                 </div>
             </div>
             <div class="kiptify-settings-group">
-                <label class="kiptify-settings-label" for="kiptify-icon-size">Icon Size (px)</label>
+                <label class="kiptify-settings-label" for="kiptify-icon-size">
+                    <span class="material-icons-outlined">photo_size_select_small</span>
+                    Icon Size (px)
+                </label>
                 <input type="number" id="kiptify-icon-size" class="kiptify-input" min="20" max="50" step="2">
             </div>
             <div class="kiptify-settings-group">
-                <label class="kiptify-settings-label" for="kiptify-restore-delay">Global Restore Delay (ms)</label>
+                <label class="kiptify-settings-label" for="kiptify-restore-delay">
+                    <span class="material-icons-outlined">timer</span>
+                    Global Restore Delay (ms)
+                </label>
                 <input type="number" id="kiptify-restore-delay" class="kiptify-input" min="0" step="10">
             </div>
-            <button type="button" id="kiptify-delete-all" class="kiptify-btn kiptify-btn-danger kiptify-btn-full-width">
-                <span class="material-icons">delete_forever</span>Delete All Data
-            </button>`;
+            <div class="kiptify-settings-group">
+                <label class="kiptify-settings-label">
+                    <span class="material-icons-outlined">dangerous</span>
+                    Danger Zone
+                </label>
+                <button type="button" id="kiptify-delete-all" class="kiptify-btn kiptify-btn-danger kiptify-btn-full-width">
+                    <span class="material-icons">delete_forever</span>Delete All Data
+                </button>
+            </div>`;
         getSettings().then(s => {
             tabs.settings.content.querySelector(`input[name="kiptify-pos"][value="${s.iconPosition}"]`).checked = true;
             tabs.settings.content.querySelector('#kiptify-icon-size').value = s.iconSize;
