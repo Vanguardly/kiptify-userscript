@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Kiptify | Save & Restore Web Forms
-// @namespace    https://github.com/your-username/kiptify
+// @namespace    https://github.com/Vanguardly/kiptify
 // @version      2.8.0
 // @description  Save and restore web forms in a single click.
 // @author       Vanguardly
@@ -155,12 +155,6 @@
         }
         showToast(`Restored: ${stateData.name}. ${updateCount} fields updated.`, 'success');
     }
-    function downloadFormData(identifier, state) {
-        const filename = `${identifier.split('/')[0]}_${state.name.replace(/[^a-z0-9]/gi, '-')}.json`;
-        const json = JSON.stringify(state, null, 2);
-        const blob = new Blob([json], { type: 'application/json' });
-        if (typeof GM_download === 'function') GM_download({ url: URL.createObjectURL(blob), name: filename, saveAs: true });
-    }
 
     // -----------------------------------------------------
     // MODULE 4: UI & STYLES
@@ -173,170 +167,196 @@
             @import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@700&family=Nunito:wght@400;600;700&display=swap');
             @import url('https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined');
 
-            #kiptify-app-container, .kiptify-menu { all: initial; }
-            #kiptify-app-container *, .kiptify-menu * { font-family: 'Nunito', sans-serif; box-sizing: border-box; }
+            /* Kiptify CSS Reset & Scoping */
+            #kiptify-app-container {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                pointer-events: none;
+                z-index: 999999;
+            }
+            #kiptify-app-container, #kiptify-app-container * {
+                all: initial;
+                font-family: 'Nunito', sans-serif;
+                box-sizing: border-box;
+            }
 
-            .font-brand { font-family: 'Ubuntu', sans-serif !important; font-weight: 700; }
-            .material-icons, .material-icons-outlined {
+            #kiptify-app-container .font-brand { font-family: 'Ubuntu', sans-serif !important; font-weight: 700; }
+            #kiptify-app-container .material-icons, #kiptify-app-container .material-icons-outlined {
                 font-family: 'Material Icons' !important; font-weight: normal; font-style: normal; line-height: 1; letter-spacing: normal; text-transform: none;
                 display: inline-block; white-space: nowrap; word-wrap: normal; direction: ltr; -webkit-font-smoothing: antialiased;
             }
-            .material-icons-outlined { font-family: 'Material Icons Outlined' !important; }
+            #kiptify-app-container .material-icons-outlined { font-family: 'Material Icons Outlined' !important; }
 
             /* Trigger Icon */
-            .kiptify-trigger {
+            #kiptify-app-container .kiptify-trigger {
+                position: absolute; display: flex; align-items: center; justify-content: center;
+                z-index: 9999; opacity: 0; pointer-events: auto;
                 background: ${color.primary} !important; border: 1px solid rgba(255,255,255,0.7) !important;
                 color: ${color.white}; border-radius: 9999px;
                 transition: all 0.2s ease-in-out !important; cursor: pointer;
             }
-            .kiptify-trigger:hover { filter: brightness(1.1); }
+            #kiptify-app-container .kiptify-trigger.kiptify-visible { opacity: 0.8; }
+            #kiptify-app-container .kiptify-trigger:hover { filter: brightness(1.1); }
 
             /* Main Menu */
-            .kiptify-menu {
+            #kiptify-app-container .kiptify-menu {
+                position: absolute; z-index: 10000; visibility: hidden;
                 min-width: 420px;
                 background: #f7f7f7 !important;
                 border-radius: 12px !important;
                 box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15) !important;
                 padding: 0.5rem;
             }
-            .kiptify-menu-content { overflow-y: auto; padding: 0.75rem; }
+            #kiptify-app-container .kiptify-menu.kiptify-visible { visibility: visible; }
+            #kiptify-app-container .kiptify-menu.pos-top { top: 0; }
+            #kiptify-app-container .kiptify-menu.pos-bottom { bottom: 0; }
+            #kiptify-app-container .kiptify-menu.pos-left { left: 0; }
+            #kiptify-app-container .kiptify-menu.pos-right { right: 0; }
+            #kiptify-app-container .kiptify-menu-content { overflow-y: auto; padding: 0.75rem; }
+
+            /* Tab Content */
+            #kiptify-app-container .kiptify-tab-content { display: none; }
+            #kiptify-app-container .kiptify-tab-content.active { display: block; }
+
 
             /* Tabs */
-            .kiptify-tab-container { border-bottom: 1px solid ${color.grayLight}; display: flex; padding: 0 0.5rem; }
-            .kiptify-tab-btn {
+            #kiptify-app-container .kiptify-tab-container { border-bottom: 1px solid ${color.grayLight}; display: flex; padding: 0 0.5rem; }
+            #kiptify-app-container .kiptify-tab-btn {
                 background-color: transparent; border: none; padding: 12px 10px; margin-right: 15px;
                 color: ${color.secondary}; font-weight: 600;
                 cursor: pointer; transition: all 0.2s ease;
                 border-bottom: 3px solid transparent; margin-bottom: -1px;
                 display: flex; align-items: center; font-size: 0.95rem;
             }
-            .kiptify-tab-btn .material-icons-outlined { font-size: 1.25rem; margin-right: 0.5rem; }
-            .kiptify-tab-btn.active { color: ${color.primary}; border-bottom-color: ${color.primary}; }
-            .kiptify-tab-btn:hover { color: ${color.primary}; }
+            #kiptify-app-container .kiptify-tab-btn .material-icons-outlined { font-size: 1.25rem; margin-right: 0.5rem; }
+            #kiptify-app-container .kiptify-tab-btn.active { color: ${color.primary}; border-bottom-color: ${color.primary}; }
+            #kiptify-app-container .kiptify-tab-btn:hover { color: ${color.primary}; }
 
             /* Entry Rows */
-            .kiptify-row {
+            #kiptify-app-container .kiptify-row {
                 background-color: ${color.grayLight};
                 border-radius: 8px;
                 transition: background-color 0.2s ease;
                 display: flex; align-items: center; padding: 0.75rem; margin-top: 0.5rem;
             }
-            .kiptify-row:hover { background-color: #d8dbe0; }
-            .kiptify-row-main { flex-grow: 1; padding: 0 0.25rem; }
-            .kiptify-row-name { font-weight: 700; font-size: 1rem; color: ${color.textDark}; display: flex; align-items: center; }
-            .kiptify-row-name .material-icons-outlined { color: ${color.secondary}; margin-left: 0.5rem; font-size: 16px; }
-            .kiptify-row-meta { font-size: 0.8rem; color: ${color.textLight}; }
-            .kiptify-row-actions { display: flex; align-items: center; gap: 0.5rem; }
+            #kiptify-app-container .kiptify-row:hover { background-color: #d8dbe0; }
+            #kiptify-app-container .kiptify-row-main { flex-grow: 1; padding: 0 0.25rem; }
+            #kiptify-app-container .kiptify-row-name { font-weight: 700; font-size: 1rem; color: ${color.textDark}; display: flex; align-items: center; }
+            #kiptify-app-container .kiptify-row-name .material-icons-outlined { color: ${color.secondary}; margin-left: 0.5rem; font-size: 16px; }
+            #kiptify-app-container .kiptify-row-meta { font-size: 0.8rem; color: ${color.textLight}; }
+            #kiptify-app-container .kiptify-row-actions { display: flex; align-items: center; gap: 0.5rem; }
             
             /* Action Buttons (in rows) */
-            .kiptify-action-btn {
+            #kiptify-app-container .kiptify-action-btn {
                 border: none; cursor: pointer; color: ${color.white}; border-radius: 9999px;
                 display: flex; align-items: center; justify-content: center;
                 transition: filter 0.2s ease;
             }
-            .kiptify-action-btn:hover { filter: brightness(1.1); }
+            #kiptify-app-container .kiptify-action-btn:hover { filter: brightness(1.1); }
 
-            .kiptify-action-btn.small { width: 30px; height: 30px; }
-            .kiptify-action-btn.small .material-icons-outlined { font-size: 16px; }
+            #kiptify-app-container .kiptify-action-btn.small { width: 30px; height: 30px; }
+            #kiptify-app-container .kiptify-action-btn.small .material-icons-outlined { font-size: 16px; }
 
-            .kiptify-action-btn.large { width: 38px; height: 38px; }
-            .kiptify-action-btn.large .material-icons-outlined { font-size: 20px; }
+            #kiptify-app-container .kiptify-action-btn.large { width: 38px; height: 38px; }
+            #kiptify-app-container .kiptify-action-btn.large .material-icons-outlined { font-size: 20px; }
 
-            .kiptify-action-btn-restore { background-color: ${color.highlight}; }
-            .kiptify-action-btn-edit { background-color: ${color.warning}; }
-            .kiptify-action-btn-download { background-color: ${color.secondary}; display: none; }
-            .kiptify-action-btn-delete { background-color: ${color.danger}; }
+            #kiptify-app-container .kiptify-action-btn-restore { background-color: ${color.highlight}; }
+            #kiptify-app-container .kiptify-action-btn-edit { background-color: ${color.warning}; }
+            #kiptify-app-container .kiptify-action-btn-delete { background-color: ${color.danger}; }
 
             /* General Buttons & Inputs */
-            .kiptify-btn {
+            #kiptify-app-container .kiptify-btn {
                 border: none; transition: filter 0.2s ease; cursor: pointer; font-weight: 600;
                 border-radius: 0.5rem; padding: 0.5rem 1rem;
                 display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
             }
-            .kiptify-btn:hover { filter: brightness(1.1); }
-            .kiptify-btn-primary { background-color: ${color.primary}; color: ${color.white}; }
-            .kiptify-btn-secondary { background-color: ${color.grayLight}; color: ${color.textDark}; }
-            .kiptify-btn-danger { background-color: ${color.danger}; color: ${color.white}; }
-            .kiptify-btn-full-width { width: 100%; margin-top: 1rem; }
+            #kiptify-app-container .kiptify-btn:hover { filter: brightness(1.1); }
+            #kiptify-app-container .kiptify-btn-primary { background-color: ${color.primary}; color: ${color.white}; }
+            #kiptify-app-container .kiptify-btn-secondary { background-color: ${color.grayLight}; color: ${color.textDark}; }
+            #kiptify-app-container .kiptify-btn-danger { background-color: ${color.danger}; color: ${color.white}; }
+            #kiptify-app-container .kiptify-btn-full-width { width: 100%; margin-top: 1rem; }
             
-            .kiptify-input {
+            #kiptify-app-container .kiptify-input {
                 background-color: rgba(255,255,255,0.5); border: 1px solid rgba(0,0,0,0.1); transition: all 0.2s ease;
                 width: 100%; padding: 0.5rem 1rem; border-radius: 0.5rem; margin-bottom: 0.5rem;
             }
-            .kiptify-input:focus {
+            #kiptify-app-container .kiptify-input:focus {
                 background-color: ${color.white}; border-color: ${color.primary};
                 box-shadow: 0 0 0 3px rgba(223, 5, 74, 0.1); outline: none;
             }
 
             /* Modal */
-            .kiptify-modal-overlay {
+            #kiptify-app-container .kiptify-modal-overlay {
                 position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: auto;
                 background-color: rgba(0,0,0,0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
                 z-index: 100001; display: flex; justify-content: center; align-items: center;
             }
-            .kiptify-modal-content {
+            #kiptify-app-container .kiptify-modal-content {
                 background-color: ${color.white}; padding: 1.5rem; border-radius: 0.5rem;
                 box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
                 max-width: 450px; width: 90%;
             }
-            .kiptify-modal-title {
+            #kiptify-app-container .kiptify-modal-title {
                 font-family: 'Ubuntu', sans-serif !important; font-weight: 700;
                 font-size: 1.25rem; color: ${color.textDark}; margin-bottom: 1rem;
             }
-            .kiptify-modal-title .kiptify-title-dot { color: ${color.primary}; }
-            .kiptify-modal-label {
+            #kiptify-app-container .kiptify-modal-title .kiptify-title-dot { color: ${color.primary}; }
+            #kiptify-app-container .kiptify-modal-label {
                 display: block; font-weight: 600; font-size: 0.875rem;
                 color: ${color.textMedium}; margin-bottom: 0.5rem;
             }
-            .kiptify-modal-actions {
+            #kiptify-app-container .kiptify-modal-actions {
                 display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.5rem;
             }
 
             /* Toast Notifications */
-            .kiptify-toast {
+            #kiptify-app-container .kiptify-toast {
                 position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
                 z-index: 100001; padding: 12px 22px; color: ${color.white}; font-weight: 600;
                 border-radius: 0.5rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
                 opacity: 0; transition: all 300ms ease; pointer-events: none;
             }
-            .kiptify-toast.show { opacity: 1; bottom: 30px; }
-            .kiptify-toast-success { background-color: ${color.highlight}; }
-            .kiptify-toast-error { background-color: ${color.danger}; }
-            .kiptify-toast-info { background-color: ${color.secondary}; }
+            #kiptify-app-container .kiptify-toast.show { opacity: 1; bottom: 30px; }
+            #kiptify-app-container .kiptify-toast-success { background-color: ${color.highlight}; }
+            #kiptify-app-container .kiptify-toast-error { background-color: ${color.danger}; }
+            #kiptify-app-container .kiptify-toast-info { background-color: ${color.secondary}; }
 
             /* Save Menu Specifics */
-            .kiptify-menu-header { display: flex; justify-content: space-between; align-items: center; padding: 0.25rem 0.5rem; }
-            .kiptify-menu-title { font-size: 1.25rem; color: ${color.textDark}; }
-            .kiptify-menu-title .kiptify-title-dot { color: ${color.primary}; }
-            .kiptify-save-btn-group { display: flex; align-items: center; border-radius: 0.5rem; background-color: ${color.primary}; }
-            #kiptify-save-btn {
+            #kiptify-app-container .kiptify-menu-header { display: flex; justify-content: space-between; align-items: center; padding: 0.25rem 0.5rem; }
+            #kiptify-app-container .kiptify-menu-title { font-size: 1.25rem; color: ${color.textDark}; }
+            #kiptify-app-container .kiptify-menu-title .kiptify-title-dot { color: ${color.primary}; }
+            #kiptify-app-container .kiptify-save-btn-group { display: flex; align-items: center; border-radius: 0.5rem; background-color: ${color.primary}; }
+            #kiptify-app-container #kiptify-save-btn {
                 display: flex; align-items: center; justify-content: center; gap: 0.5rem;
                 padding: 0.5rem 0.75rem 0.5rem 1rem; color: ${color.white}; font-weight: 600;
                 background: transparent; border: none; cursor: pointer;
             }
-            #kiptify-save-btn .material-icons { font-size: 18px; }
-            #kiptify-save-options-toggle {
+            #kiptify-app-container #kiptify-save-btn .material-icons { font-size: 18px; }
+            #kiptify-app-container #kiptify-save-options-toggle {
                 padding: 0.5rem 0.5rem 0.5rem 0.25rem; color: ${color.white};
                 background: transparent; border: none; cursor: pointer;
                 border-left: 1px solid rgba(255,255,255,0.3);
             }
-            .save-accordion { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; padding: 0 0.5rem; }
-            .save-accordion.open { max-height: 100px; }
-            .kiptify-save-hidden-label {
+            #kiptify-app-container .save-accordion { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; padding: 0 0.5rem; }
+            #kiptify-app-container .save-accordion.open { max-height: 100px; }
+            #kiptify-app-container .kiptify-save-hidden-label {
                 display: flex; align-items: center; font-size: 0.875rem;
                 color: ${color.textMedium}; cursor: pointer; padding: 0.5rem 0;
             }
-            .kiptify-save-hidden-label input { margin-right: 0.5rem; }
-            .kiptify-save-hidden-label .material-icons-outlined { font-size: 16px; margin-right: 0.25rem; }
+            #kiptify-app-container .kiptify-save-hidden-label input { margin-right: 0.5rem; }
+            #kiptify-app-container .kiptify-save-hidden-label .material-icons-outlined { font-size: 16px; margin-right: 0.25rem; }
 
             /* Settings Tab */
-            .kiptify-settings-content { padding: 0.5rem; }
-            .kiptify-settings-group { margin-bottom: 1rem; }
-            .kiptify-settings-label { display: block; font-weight: 600; font-size: 0.875rem; color: ${color.textMedium}; margin-bottom: 0.5rem; }
-            .kiptify-settings-radio-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; font-size: 0.875rem; }
-            .kiptify-settings-radio-label { display: flex; align-items: center; cursor: pointer; }
-            .kiptify-settings-radio-label input { margin-right: 0.5rem; }
-            .kiptify-no-entries-msg { text-align: center; color: ${color.textLight}; font-size: 0.875rem; padding: 2rem 0; }
+            #kiptify-app-container .kiptify-settings-content { padding: 0.5rem; }
+            #kiptify-app-container .kiptify-settings-group { margin-bottom: 1rem; }
+            #kiptify-app-container .kiptify-settings-label { display: block; font-weight: 600; font-size: 0.875rem; color: ${color.textMedium}; margin-bottom: 0.5rem; }
+            #kiptify-app-container .kiptify-settings-radio-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; font-size: 0.875rem; }
+            #kiptify-app-container .kiptify-settings-radio-label { display: flex; align-items: center; cursor: pointer; }
+            #kiptify-app-container .kiptify-settings-radio-label input { margin-right: 0.5rem; }
+            #kiptify-app-container .kiptify-no-entries-msg { text-align: center; color: ${color.textLight}; font-size: 0.875rem; padding: 2rem 0; }
         `;
         document.head.appendChild(style);
     }
@@ -442,7 +462,6 @@
         const restoreIconBtn = createBtn('restore', 'Restore', 'restore', 'large', restoreAction);
 
         buttons.appendChild(createBtn('edit', 'Edit Name', 'edit', 'small', () => showEditModal(formId, state, updateCallback)));
-        buttons.appendChild(createBtn('download', 'Download JSON', 'download', 'small', () => downloadFormData(formId, state)));
         buttons.appendChild(createBtn('delete', 'Delete Entry', 'delete', 'small', async () => {
             if (confirm(`Delete "${state.name}"? This cannot be undone.`)) {
                 await deleteFormState(formId, state.uid);
@@ -461,10 +480,12 @@
         document.querySelectorAll('.kiptify-menu').forEach(m => m.remove());
 
         const menu = document.createElement('div');
-        menu.className = 'kiptify-menu';
-        menu.style.cssText = `position: absolute; z-index: 10000; visibility: hidden;`;
+        menu.className = 'kiptify-menu form-container';
+        menu.dataset.formId = identifier;
         menu.addEventListener('click', e => e.stopPropagation());
-        form.appendChild(menu);
+
+        const appContainer = document.getElementById('kiptify-app-container');
+        appContainer.appendChild(menu);
 
         menu.innerHTML = `
             <div class="kiptify-menu-header">
@@ -492,20 +513,46 @@
         const contentContainer = menu.querySelector('.kiptify-menu-content');
         const settings = await getSettings();
 
-        menu.style.visibility = 'visible';
-        if(settings.iconPosition.includes('top')) menu.style.top = '0';
-        if(settings.iconPosition.includes('bottom')) menu.style.bottom = '0';
-        if(settings.iconPosition.includes('left')) menu.style.left = '0';
-        if(settings.iconPosition.includes('right')) menu.style.right = '0';
+        menu.classList.add('kiptify-visible');
+        if (settings.iconPosition.includes('top')) menu.classList.add('pos-top');
+        if (settings.iconPosition.includes('bottom')) menu.classList.add('pos-bottom');
+        if (settings.iconPosition.includes('left')) menu.classList.add('pos-left');
+        if (settings.iconPosition.includes('right')) menu.classList.add('pos-right');
 
         const menuRect = menu.getBoundingClientRect();
         const availableHeight = window.innerHeight - menuRect.top - 60;
         contentContainer.style.maxHeight = `${availableHeight}px`;
 
+        const updateMenuPosition = () => {
+            const formRect = form.getBoundingClientRect();
+            const menuRect = menu.getBoundingClientRect();
+
+            let top = formRect.top;
+            let left = formRect.left;
+
+            if (settings.iconPosition.includes('bottom')) {
+                top = formRect.bottom - menuRect.height;
+            }
+
+            if (settings.iconPosition.includes('right')) {
+                left = formRect.right - menuRect.width;
+            }
+
+            menu.style.top = `${top}px`;
+            menu.style.left = `${left}px`;
+        };
+
+        updateMenuPosition();
+        window.addEventListener('resize', updateMenuPosition);
+
         const tabs = { entries: { icon: 'list_alt', title: 'Entries' }, search: { icon: 'search', title: 'Search' }, settings: { icon: 'settings', title: 'Settings' } };
 
         for(const key in tabs) {
-            tabs[key].content = document.createElement('div');
+            const tabContent = document.createElement('div');
+            tabContent.className = 'kiptify-tab-content';
+            tabContent.dataset.tabContent = key;
+            tabs[key].content = tabContent;
+
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'kiptify-tab-btn';
@@ -513,15 +560,15 @@
             btn.innerHTML = `<span class="material-icons-outlined">${tabs[key].icon}</span>${tabs[key].title}`;
             btn.onclick = () => switchTab(key);
             tabNav.appendChild(btn);
-            contentContainer.appendChild(tabs[key].content);
+            contentContainer.appendChild(tabContent);
         }
 
         const switchTab = (tabName) => {
             for(const key in tabs) {
-                tabs[key].content.style.display = 'none';
+                tabs[key].content.classList.remove('active');
                 tabNav.querySelector(`[data-tab="${key}"]`).classList.remove('active');
             }
-            tabs[tabName].content.style.display = 'block';
+            tabs[tabName].content.classList.add('active');
             tabNav.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
         };
 
@@ -629,7 +676,6 @@
         if (document.getElementById('kiptify-app-container')) return;
         const appContainer = document.createElement('div');
         appContainer.id = 'kiptify-app-container';
-        appContainer.style.cssText = `position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 999999;`;
         document.body.appendChild(appContainer);
     }
 
@@ -637,7 +683,6 @@
         if (form.querySelector('.kiptify-trigger')) return;
         const iconDiv = document.createElement('div');
         iconDiv.className = 'kiptify-trigger material-icons';
-        iconDiv.style.cssText = `position: absolute; display: flex; align-items: center; justify-content: center; z-index: 9999; opacity: 0; pointer-events: auto;`;
         iconDiv.innerHTML = 'restore';
         iconDiv.title = 'Kiptify: Save/Restore Form';
 
@@ -646,15 +691,17 @@
             showMenu(form, getFormIdentifier(form), iconDiv);
         });
 
+        const appContainer = document.getElementById('kiptify-app-container');
+        appContainer.appendChild(iconDiv);
+
         if (window.getComputedStyle(form).position === 'static') {
             form.style.position = 'relative';
         }
 
         let timeout;
-        form.addEventListener('mouseenter', () => { clearTimeout(timeout); iconDiv.style.opacity = '0.8'; });
-        form.addEventListener('mouseleave', () => { timeout = setTimeout(() => iconDiv.style.opacity = '0', 300); });
+        form.addEventListener('mouseenter', () => { clearTimeout(timeout); iconDiv.classList.add('kiptify-visible'); });
+        form.addEventListener('mouseleave', () => { timeout = setTimeout(() => iconDiv.classList.remove('kiptify-visible'), 300); });
 
-        form.appendChild(iconDiv);
         updateIconPosition(form);
     }
 
