@@ -177,7 +177,7 @@
                 pointer-events: none;
                 z-index: 999999;
             }
-            #kiptify-app-container, #kiptify-app-container * {
+            #kiptify-app-container, #kiptify-app-container *, #kiptify-app-container *::before, #kiptify-app-container *::after {
                 all: initial;
                 font-family: 'Nunito', sans-serif;
                 box-sizing: border-box;
@@ -192,23 +192,35 @@
 
             /* Trigger Icon */
             #kiptify-app-container .kiptify-trigger {
-                position: absolute; display: flex; align-items: center; justify-content: center;
-                z-index: 9999; opacity: 0; pointer-events: auto;
-                background: ${color.primary} !important; border: 1px solid rgba(255,255,255,0.7) !important;
-                color: ${color.white}; border-radius: 9999px;
-                transition: all 0.2s ease-in-out !important; cursor: pointer;
+                display: flex;
+                position: absolute;
+                align-items: center;
+                justify-content: center;
+                z-index: 9999;
+                opacity: 0;
+                pointer-events: auto;
+                background: ${color.primary} !important;
+                border: 1px solid rgba(255,255,255,0.7) !important;
+                color: ${color.white};
+                border-radius: 9999px;
+                cursor: pointer;
+                transition: all 0.2s ease-in-out !important;
             }
             #kiptify-app-container .kiptify-trigger.kiptify-visible { opacity: 0.8; }
             #kiptify-app-container .kiptify-trigger:hover { filter: brightness(1.1); }
 
             /* Main Menu */
             #kiptify-app-container .kiptify-menu {
-                position: absolute; z-index: 10000; visibility: hidden;
+                display: block;
+                position: absolute;
+                z-index: 10000;
+                visibility: hidden;
                 min-width: 420px;
                 background: #f7f7f7 !important;
                 border-radius: 12px !important;
                 box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15) !important;
                 padding: 0.5rem;
+                color: ${color.textDark};
             }
             #kiptify-app-container .kiptify-menu.kiptify-visible { visibility: visible; }
             #kiptify-app-container .kiptify-menu.pos-top { top: 0; }
@@ -223,13 +235,25 @@
 
 
             /* Tabs */
-            #kiptify-app-container .kiptify-tab-container { border-bottom: 1px solid ${color.grayLight}; display: flex; padding: 0 0.5rem; }
+            #kiptify-app-container .kiptify-tab-container {
+                display: flex;
+                border-bottom: 1px solid ${color.grayLight};
+                padding: 0 0.5rem;
+            }
             #kiptify-app-container .kiptify-tab-btn {
-                background-color: transparent; border: none; padding: 12px 10px; margin-right: 15px;
-                color: ${color.secondary}; font-weight: 600;
-                cursor: pointer; transition: all 0.2s ease;
-                border-bottom: 3px solid transparent; margin-bottom: -1px;
-                display: flex; align-items: center; font-size: 0.95rem;
+                display: flex;
+                align-items: center;
+                background-color: transparent;
+                border: none;
+                padding: 12px 10px;
+                margin-right: 15px;
+                color: ${color.secondary};
+                font-weight: 600;
+                font-size: 0.95rem;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                border-bottom: 3px solid transparent;
+                margin-bottom: -1px;
             }
             #kiptify-app-container .kiptify-tab-btn .material-icons-outlined { font-size: 1.25rem; margin-right: 0.5rem; }
             #kiptify-app-container .kiptify-tab-btn.active { color: ${color.primary}; border-bottom-color: ${color.primary}; }
@@ -237,10 +261,13 @@
 
             /* Entry Rows */
             #kiptify-app-container .kiptify-row {
+                display: flex;
+                align-items: center;
                 background-color: ${color.grayLight};
                 border-radius: 8px;
+                padding: 0.75rem;
+                margin-top: 0.5rem;
                 transition: background-color 0.2s ease;
-                display: flex; align-items: center; padding: 0.75rem; margin-top: 0.5rem;
             }
             #kiptify-app-container .kiptify-row:hover { background-color: #d8dbe0; }
             #kiptify-app-container .kiptify-row-main { flex-grow: 1; padding: 0 0.25rem; }
@@ -251,8 +278,13 @@
             
             /* Action Buttons (in rows) */
             #kiptify-app-container .kiptify-action-btn {
-                border: none; cursor: pointer; color: ${color.white}; border-radius: 9999px;
-                display: flex; align-items: center; justify-content: center;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: none;
+                cursor: pointer;
+                color: ${color.white};
+                border-radius: 9999px;
                 transition: filter 0.2s ease;
             }
             #kiptify-app-container .kiptify-action-btn:hover { filter: brightness(1.1); }
@@ -269,30 +301,58 @@
 
             /* General Buttons & Inputs */
             #kiptify-app-container .kiptify-btn {
-                border: none; transition: filter 0.2s ease; cursor: pointer; font-weight: 600;
-                border-radius: 0.5rem; padding: 0.5rem 1rem;
-                display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+                border: none;
+                transition: filter 0.2s ease;
+                cursor: pointer;
+                font-weight: 600;
+                border-radius: 0.5rem;
+                padding: 0.5rem 1rem;
+                color: ${color.white};
             }
             #kiptify-app-container .kiptify-btn:hover { filter: brightness(1.1); }
-            #kiptify-app-container .kiptify-btn-primary { background-color: ${color.primary}; color: ${color.white}; }
+            #kiptify-app-container .kiptify-btn-primary { background-color: ${color.primary}; }
             #kiptify-app-container .kiptify-btn-secondary { background-color: ${color.grayLight}; color: ${color.textDark}; }
-            #kiptify-app-container .kiptify-btn-danger { background-color: ${color.danger}; color: ${color.white}; }
+            #kiptify-app-container .kiptify-btn-danger { background-color: ${color.danger}; }
             #kiptify-app-container .kiptify-btn-full-width { width: 100%; margin-top: 1rem; }
             
             #kiptify-app-container .kiptify-input {
-                background-color: rgba(255,255,255,0.5); border: 1px solid rgba(0,0,0,0.1); transition: all 0.2s ease;
-                width: 100%; padding: 0.5rem 1rem; border-radius: 0.5rem; margin-bottom: 0.5rem;
+                display: block;
+                width: 100%;
+                padding: 0.5rem 1rem;
+                margin-bottom: 0.5rem;
+                background-color: rgba(255,255,255,0.5);
+                border: 1px solid rgba(0,0,0,0.1);
+                border-radius: 0.5rem;
+                transition: all 0.2s ease;
+                color: ${color.textDark};
+                font-size: 1rem;
             }
             #kiptify-app-container .kiptify-input:focus {
-                background-color: ${color.white}; border-color: ${color.primary};
-                box-shadow: 0 0 0 3px rgba(223, 5, 74, 0.1); outline: none;
+                background-color: ${color.white};
+                border-color: ${color.primary};
+                box-shadow: 0 0 0 3px rgba(223, 5, 74, 0.1);
+                outline: none;
             }
 
             /* Modal */
             #kiptify-app-container .kiptify-modal-overlay {
-                position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: auto;
-                background-color: rgba(0,0,0,0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-                z-index: 100001; display: flex; justify-content: center; align-items: center;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                pointer-events: auto;
+                background-color: rgba(0,0,0,0.4);
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                z-index: 100001;
             }
             #kiptify-app-container .kiptify-modal-content {
                 background-color: ${color.white}; padding: 1.5rem; border-radius: 0.5rem;
@@ -314,10 +374,20 @@
 
             /* Toast Notifications */
             #kiptify-app-container .kiptify-toast {
-                position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-                z-index: 100001; padding: 12px 22px; color: ${color.white}; font-weight: 600;
-                border-radius: 0.5rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
-                opacity: 0; transition: all 300ms ease; pointer-events: none;
+                display: block;
+                position: fixed;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 100001;
+                padding: 12px 22px;
+                color: ${color.white};
+                font-weight: 600;
+                border-radius: 0.5rem;
+                box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+                opacity: 0;
+                transition: all 300ms ease;
+                pointer-events: none;
             }
             #kiptify-app-container .kiptify-toast.show { opacity: 1; bottom: 30px; }
             #kiptify-app-container .kiptify-toast-success { background-color: ${color.highlight}; }
@@ -330,14 +400,24 @@
             #kiptify-app-container .kiptify-menu-title .kiptify-title-dot { color: ${color.primary}; }
             #kiptify-app-container .kiptify-save-btn-group { display: flex; align-items: center; border-radius: 0.5rem; background-color: ${color.primary}; }
             #kiptify-app-container #kiptify-save-btn {
-                display: flex; align-items: center; justify-content: center; gap: 0.5rem;
-                padding: 0.5rem 0.75rem 0.5rem 1rem; color: ${color.white}; font-weight: 600;
-                background: transparent; border: none; cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+                padding: 0.5rem 0.75rem 0.5rem 1rem;
+                color: ${color.white};
+                font-weight: 600;
+                background: transparent;
+                border: none;
+                cursor: pointer;
             }
             #kiptify-app-container #kiptify-save-btn .material-icons { font-size: 18px; }
             #kiptify-app-container #kiptify-save-options-toggle {
-                padding: 0.5rem 0.5rem 0.5rem 0.25rem; color: ${color.white};
-                background: transparent; border: none; cursor: pointer;
+                padding: 0.5rem 0.5rem 0.5rem 0.25rem;
+                color: ${color.white};
+                background: transparent;
+                border: none;
+                cursor: pointer;
                 border-left: 1px solid rgba(255,255,255,0.3);
             }
             #kiptify-app-container .save-accordion { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; padding: 0 0.5rem; }
