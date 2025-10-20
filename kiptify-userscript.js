@@ -194,38 +194,38 @@
             /* Main Menu */
             .kiptify-menu {
                 min-width: 420px;
-                background: linear-gradient(145deg, rgba(255, 255, 255, 0.8), rgba(245, 245, 245, 0.7)) !important;
-                backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-                border: 1px solid rgba(255,255,255,0.6); border-radius: 16px !important;
+                background: #f7f7f7 !important;
+                border-radius: 12px !important;
                 box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15) !important;
-                padding: 1rem;
+                padding: 0.5rem;
             }
-            .kiptify-menu-content { overflow-y: auto; padding: 0.25rem; }
+            .kiptify-menu-content { overflow-y: auto; padding: 0.75rem; }
 
             /* Tabs */
-            .kiptify-tab-container { border-bottom: 2px solid rgba(0,0,0,0.05); display: flex; }
+            .kiptify-tab-container { border-bottom: 1px solid ${color.grayLight}; display: flex; padding: 0 0.5rem; }
             .kiptify-tab-btn {
-                background-color: transparent; border: none; padding: 10px 14px; margin-right: 5px;
-                border-radius: 8px 8px 0 0; color: ${color.secondary}; font-weight: 700;
+                background-color: transparent; border: none; padding: 12px 10px; margin-right: 15px;
+                color: ${color.secondary}; font-weight: 600;
                 cursor: pointer; transition: all 0.2s ease;
-                border-bottom: 2px solid transparent; margin-bottom: -2px;
-                display: flex; align-items: center; font-size: 0.875rem;
+                border-bottom: 3px solid transparent; margin-bottom: -1px;
+                display: flex; align-items: center; font-size: 0.95rem;
             }
-            .kiptify-tab-btn .material-icons-outlined { font-size: 1.125rem; margin-right: 0.5rem; }
+            .kiptify-tab-btn .material-icons-outlined { font-size: 1.25rem; margin-right: 0.5rem; }
             .kiptify-tab-btn.active { color: ${color.primary}; border-bottom-color: ${color.primary}; }
             .kiptify-tab-btn:hover { color: ${color.primary}; }
 
             /* Entry Rows */
             .kiptify-row {
-                background-color: rgba(255, 255, 255, 0.4); position: relative;
-                border-bottom: 1px solid rgba(0,0,0,0.08); transition: background-color 0.2s ease;
-                display: flex; align-items: center; padding: 0.25rem; border-radius: 0.5rem;
+                background-color: ${color.grayLight};
+                border-radius: 8px;
+                transition: background-color 0.2s ease;
+                display: flex; align-items: center; padding: 0.75rem; margin-top: 0.5rem;
             }
-            .kiptify-row:hover { background-color: rgba(223, 5, 74, 0.05); }
-            .kiptify-row-main { flex-grow: 1; padding: 0.25rem; }
-            .kiptify-row-name { font-weight: 700; font-size: 0.875rem; color: ${color.textDark}; display: flex; align-items: center; }
+            .kiptify-row:hover { background-color: #d8dbe0; }
+            .kiptify-row-main { flex-grow: 1; padding: 0 0.25rem; }
+            .kiptify-row-name { font-weight: 700; font-size: 1rem; color: ${color.textDark}; display: flex; align-items: center; }
             .kiptify-row-name .material-icons-outlined { color: ${color.secondary}; margin-left: 0.5rem; font-size: 16px; }
-            .kiptify-row-meta { font-size: 0.7rem; color: ${color.textLight}; }
+            .kiptify-row-meta { font-size: 0.8rem; color: ${color.textLight}; }
             .kiptify-row-actions { display: flex; align-items: center; gap: 0.5rem; }
             
             /* Action Buttons (in rows) */
@@ -235,13 +235,16 @@
                 transition: filter 0.2s ease;
             }
             .kiptify-action-btn:hover { filter: brightness(1.1); }
-            .kiptify-action-btn .material-icons-outlined { font-size: 16px; }
-            .kiptify-action-btn.small { padding: 0.25rem; }
-            .kiptify-action-btn.large { padding: 0.5rem; }
+
+            .kiptify-action-btn.small { width: 30px; height: 30px; }
+            .kiptify-action-btn.small .material-icons-outlined { font-size: 16px; }
+
+            .kiptify-action-btn.large { width: 38px; height: 38px; }
             .kiptify-action-btn.large .material-icons-outlined { font-size: 20px; }
+
             .kiptify-action-btn-restore { background-color: ${color.highlight}; }
             .kiptify-action-btn-edit { background-color: ${color.warning}; }
-            .kiptify-action-btn-download { background-color: ${color.secondary}; }
+            .kiptify-action-btn-download { background-color: ${color.secondary}; display: none; }
             .kiptify-action-btn-delete { background-color: ${color.danger}; }
 
             /* General Buttons & Inputs */
