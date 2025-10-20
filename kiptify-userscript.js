@@ -761,6 +761,7 @@
 
     function attachIcon(form) {
         if (form.querySelector('.kiptify-trigger')) return;
+        form.classList.add('kiptify-form');
         const iconDiv = document.createElement('div');
         iconDiv.className = 'kiptify-trigger material-icons';
         iconDiv.innerHTML = 'restore';
@@ -786,7 +787,6 @@
     }
 
     applyStyles();
-    createAppComponent();
     document.querySelectorAll('form').forEach(attachIcon);
 
     const observer = new MutationObserver(mutations => {
