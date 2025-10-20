@@ -363,8 +363,7 @@
     }
 
     function showToast(message, type = 'info') { // Default to 'info'
-        const container = document.getElementById('kiptify-app-container');
-        let toast = container.querySelector('.kiptify-toast');
+        let toast = document.querySelector('.kiptify-toast');
         if (toast) toast.remove();
 
         toast = document.createElement('div');
@@ -376,7 +375,7 @@
         );
         toast.textContent = message;
 
-        container.appendChild(toast);
+        document.body.appendChild(toast);
         setTimeout(() => { toast.classList.add('show'); }, 50);
         setTimeout(() => {
             toast.classList.remove('show');
@@ -397,7 +396,7 @@
                     <button type="button" id="kiptify-edit-save" class="kiptify-btn kiptify-btn-primary">Save</button>
                 </div>
             </div>`;
-        document.getElementById('kiptify-app-container').appendChild(overlay);
+        document.body.appendChild(overlay);
 
         const content = overlay.querySelector('.kiptify-modal-content');
         content.addEventListener('click', e => e.stopPropagation());
