@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Kiptify | Save & Restore Web Forms
 // @namespace    https://github.com/Vanguardly/kiptify
-// @version      2.8.0
+// @version      3.0.0
 // @description  Save and restore web forms in a single click.
 // @author       Vanguardly
 // @match        *://*/*
@@ -65,14 +65,12 @@
         await GM_setValue(STORAGE_KEY, allData);
         return newState;
     }
-    async function renameFormState(formId, uid, newName, newDelay, newRestoreHidden) {
+    async function updateFormState(formId, updatedState) {
         const allData = await GM_getValue(STORAGE_KEY, {});
         if (!allData[formId]) return false;
-        const state = allData[formId].find(s => s.uid === uid);
-        if (state) {
-            state.name = newName;
-            if (newDelay !== undefined) state.delayOverride = parseInt(newDelay) || 0;
-            if (newRestoreHidden !== undefined) state.restoreHidden = !!newRestoreHidden;
+        const index = allData[formId].findIndex(s => s.uid === updatedState.uid);
+        if (index !== -1) {
+            allData[formId][index] = updatedState;
             await GM_setValue(STORAGE_KEY, allData);
             return true;
         }
@@ -103,6 +101,15 @@
     function getBaseDomain() { try { const parts = new URL(window.location.href).hostname.split('.'); return parts.length > 2 ? parts.slice(-2).join('.') : parts.join('.'); } catch (e) { return 'local-host-or-file'; } }
     function getFormIdentifier(form) { const domain = getBaseDomain(); const formPart = form.id || (form.className.split(' ').find(c => c)) || 'no-id-or-class'; return `${domain}/${formPart}`; }
     function getInputKey(element) { return element.name || element.id; }
+    function getFieldLabel(element) {
+        if (element.id) {
+            const label = document.querySelector(`label[for="${element.id}"]`);
+            if (label) return label.textContent.trim();
+        }
+        const parentLabel = element.closest('label');
+        if (parentLabel) return parentLabel.textContent.trim();
+        return element.placeholder || '';
+    }
     function isElementVisibleAndEditable(element) {
         if (element.type === 'hidden' || element.readOnly || element.disabled) return false;
         const style = window.getComputedStyle(element);
@@ -128,9 +135,33 @@
         elements.forEach(element => {
             const key = getInputKey(element);
             if (!key || (!isElementVisibleAndEditable(element) && !shouldSaveHiddenField(element, prefs))) return;
-            if (element.type === 'checkbox' || element.type === 'radio') data[key] = element.checked;
-            else if (element.tagName === 'SELECT') data[key] = element.multiple ? Array.from(element.options).filter(o => o.selected).map(o => o.value) : element.value;
-            else data[key] = element.value;
+
+            const label = getFieldLabel(element);
+            let value;
+
+            if (element.type === 'checkbox' || element.type === 'radio') {
+                value = element.checked;
+            } else if (element.tagName === 'SELECT') {
+                value = element.multiple ? Array.from(element.options).filter(o => o.selected).map(o => o.value) : element.value;
+            } else {
+                value = element.value;
+            }
+            data[key] = { value, label };
+        });
+        return data;
+    }
+    async function getFormStructureData(form, includeHidden) {
+        const data = {};
+        const elements = form.querySelectorAll('input, select, textarea');
+        elements.forEach(element => {
+            const key = getInputKey(element);
+            if (key) {
+                const isVisible = isElementVisibleAndEditable(element);
+                if (isVisible || (includeHidden && !isVisible)) {
+                    const label = getFieldLabel(element);
+                    data[key] = { value: '', label };
+                }
+            }
         });
         return data;
     }
@@ -140,7 +171,8 @@
         if (!form) { showToast('Error: Could not find the form to restore.', 'error'); return; }
         let updateCount = 0;
         for (const key in stateData.data) {
-            const value = stateData.data[key];
+            const fieldData = stateData.data[key];
+            const value = (fieldData && typeof fieldData === 'object' && fieldData.hasOwnProperty('value')) ? fieldData.value : fieldData;
             const elements = form.querySelectorAll(`[name="${key}"], [id="${key}"]`);
             elements.forEach(element => {
                 if (element.type === 'checkbox' || element.type === 'radio') element.checked = !!value;
@@ -340,6 +372,8 @@
             .kiptify-settings-radio-label { display: flex; align-items: center; cursor: pointer; }
             .kiptify-settings-radio-label input { margin-right: 0.5rem; }
             .kiptify-no-entries-msg { text-align: center; color: ${color.textLight}; font-size: 0.875rem; padding: 2rem 0; }
+            .kiptify-hidden-field { opacity: 0.6; }
+            .kiptify-hidden-field .kiptify-input { background-color: #f0f0f0; }
         `;
         document.head.appendChild(style);
     }
@@ -383,38 +417,184 @@
         }, 2500);
     }
 
-    function showEditModal(formId, state, updateCallback) {
+
+    function showAddCustomModal(formId, form, updateCallback) {
         const overlay = document.createElement('div');
         overlay.className = 'kiptify-modal-overlay';
         overlay.innerHTML = `
-            <div class="kiptify-modal-content">
+            <div class="kiptify-modal-content" style="max-width: 400px;">
+                <h3 class="kiptify-modal-title">Add Custom Entry<span class="kiptify-title-dot">.</span></h3>
+                <p style="color: #6b7280; font-size: 0.875rem; margin-bottom: 1rem;">
+                    Choose an option to create a new, editable entry for this form.
+                </p>
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <button type="button" id="kiptify-create-blank" class="kiptify-btn kiptify-btn-secondary">
+                        <span class="material-icons-outlined">add_box</span>Create Blank Entry
+                    </button>
+                    <div style="border: 1px solid #E5E7EB; border-radius: 0.5rem; padding: 0.75rem;">
+                        <button type="button" id="kiptify-create-from-form" class="kiptify-btn kiptify-btn-secondary" style="width: 100%;">
+                            <span class="material-icons-outlined">post_add</span>Create From Current Form
+                        </button>
+                        <label class="kiptify-save-hidden-label" style="margin-top: 0.75rem; justify-content: center;">
+                            <input type="checkbox" id="kiptify-include-hidden">
+                            <span class="material-icons-outlined">visibility_off</span>
+                            Include Hidden Fields
+                        </label>
+                    </div>
+                </div>
+                <div class="kiptify-modal-actions" style="margin-top: 1.5rem;">
+                    <button type="button" id="kiptify-custom-cancel" class="kiptify-btn kiptify-btn-secondary">Cancel</button>
+                </div>
+            </div>`;
+        document.body.appendChild(overlay);
+
+        const content = overlay.querySelector('.kiptify-modal-content');
+        const closeModal = () => overlay.remove();
+        overlay.addEventListener('click', closeModal);
+        content.querySelector('#kiptify-custom-cancel').onclick = closeModal;
+        content.addEventListener('click', e => e.stopPropagation());
+
+        content.querySelector('#kiptify-create-blank').onclick = async () => {
+            const newState = await saveFormState(form, formId, {}, "New Custom Entry");
+            closeModal();
+            showAdvancedEditModal(formId, newState, form, updateCallback);
+        };
+
+        content.querySelector('#kiptify-create-from-form').onclick = async () => {
+            const includeHidden = content.querySelector('#kiptify-include-hidden').checked;
+            const data = await getFormStructureData(form, includeHidden);
+            const newState = await saveFormState(form, formId, data, "New From Form");
+            closeModal();
+            showAdvancedEditModal(formId, newState, form, updateCallback);
+        };
+    }
+
+    function showAdvancedEditModal(formId, state, form, updateCallback) {
+        const overlay = document.createElement('div');
+        overlay.className = 'kiptify-modal-overlay';
+        overlay.innerHTML = `
+            <div class="kiptify-modal-content" style="max-width: 600px; max-height: 80vh; display: flex; flex-direction: column;">
                 <h3 class="kiptify-modal-title">Edit Entry<span class="kiptify-title-dot">.</span></h3>
-                <label class="kiptify-modal-label" for="kiptify-edit-name">Entry Name:</label>
-                <input type="text" id="kiptify-edit-name" class="kiptify-input" value="${state.name}">
+                <div id="kiptify-edit-fields-container" style="flex-grow: 1; overflow-y: auto; padding-right: 1rem;">
+                    <!-- Fields will be rendered here -->
+                </div>
                 <div class="kiptify-modal-actions">
-                    <button type="button" id="kiptify-edit-cancel" class="kiptify-btn kiptify-btn-secondary">Cancel</button>
-                    <button type="button" id="kiptify-edit-save" class="kiptify-btn kiptify-btn-primary">Save</button>
+                    <button type="button" id="kiptify-edit-cancel" class="kiptify-btn kiptify-btn-secondary">Close</button>
+                    <button type="button" id="kiptify-edit-save" class="kiptify-btn kiptify-btn-primary">Save Changes</button>
                 </div>
             </div>`;
         document.body.appendChild(overlay);
 
         const content = overlay.querySelector('.kiptify-modal-content');
         content.addEventListener('click', e => e.stopPropagation());
-        const closeModal = () => { overlay.remove(); };
+        const closeModal = () => overlay.remove();
         overlay.addEventListener('click', closeModal);
         content.querySelector('#kiptify-edit-cancel').onclick = closeModal;
+
+        const fieldsContainer = content.querySelector('#kiptify-edit-fields-container');
+
+        const renderFields = (data) => {
+            fieldsContainer.innerHTML = `
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 0.5rem 1rem; align-items: center; margin-bottom: 1rem;">
+                    <label class="kiptify-modal-label" for="kiptify-edit-name" style="margin: 0;">Entry Name:</label>
+                    <input type="text" id="kiptify-edit-name" class="kiptify-input" value="${state.name}" style="margin: 0;">
+                </div>
+                <hr style="border: none; border-top: 1px solid #eee; margin: 1rem 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <h4 style="font-weight: 600; color: #4b5563; margin: 0;">Fields</h4>
+                    <button type="button" id="kiptify-add-field" class="kiptify-btn kiptify-btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                        <span class="material-icons-outlined" style="font-size: 1rem; margin-right: 0.25rem;">add</span>Add Field
+                    </button>
+                </div>`;
+
+            const formElements = Array.from(form.querySelectorAll('input, select, textarea'));
+
+            for (const key in data) {
+                const fieldData = data[key];
+                const isOldFormat = typeof fieldData !== 'object' || !fieldData.hasOwnProperty('value');
+                const value = isOldFormat ? fieldData : fieldData.value;
+                const label = isOldFormat ? '' : fieldData.label;
+
+                const fieldRow = document.createElement('div');
+                fieldRow.className = 'kiptify-edit-field-row';
+
+                const correspondingElement = formElements.find(el => getInputKey(el) === key);
+                if (correspondingElement && !isElementVisibleAndEditable(correspondingElement)) {
+                    fieldRow.classList.add('kiptify-hidden-field');
+                    fieldRow.title = 'This is a hidden field.';
+                }
+
+                fieldRow.style.cssText = 'display: grid; grid-template-columns: 1fr 1fr 1fr 50px; gap: 0.5rem 1rem; align-items: center; margin-bottom: 0.5rem;';
+                fieldRow.innerHTML = `
+                    <input type="text" class="kiptify-input kiptify-edit-label" value="${label}" placeholder="Label" style="margin: 0;">
+                    <input type="text" class="kiptify-input kiptify-edit-key" value="${key}" placeholder="Field Name" style="margin: 0;">
+                    <input type="text" class="kiptify-input kiptify-edit-value" value="${value}" placeholder="Field Value" style="margin: 0;">
+                    <button type="button" class="kiptify-action-btn kiptify-action-btn-delete small" title="Delete Field">
+                        <span class="material-icons-outlined">delete</span>
+                    </button>`;
+                fieldsContainer.appendChild(fieldRow);
+
+                fieldRow.querySelector('.kiptify-action-btn-delete').addEventListener('click', () => {
+                    fieldRow.remove();
+                });
+            }
+        };
+
+        renderFields(state.data);
+
+        fieldsContainer.querySelector('#kiptify-add-field').addEventListener('click', () => {
+            const newFieldRow = document.createElement('div');
+            newFieldRow.className = 'kiptify-edit-field-row';
+            newFieldRow.style.cssText = 'display: grid; grid-template-columns: 1fr 1fr 1fr 50px; gap: 0.5rem 1rem; align-items: center; margin-bottom: 0.5rem;';
+            newFieldRow.innerHTML = `
+                <input type="text" class="kiptify-input kiptify-edit-label" placeholder="Label" style="margin: 0;">
+                <input type="text" class="kiptify-input kiptify-edit-key" placeholder="Field Name" style="margin: 0;">
+                <input type="text" class="kiptify-input kiptify-edit-value" placeholder="Field Value" style="margin: 0;">
+                <button type="button" class="kiptify-action-btn kiptify-action-btn-delete small" title="Delete Field">
+                    <span class="material-icons-outlined">delete</span>
+                </button>`;
+            fieldsContainer.appendChild(newFieldRow);
+
+            newFieldRow.querySelector('.kiptify-action-btn-delete').addEventListener('click', () => {
+                newFieldRow.remove();
+            });
+        });
+
         content.querySelector('#kiptify-edit-save').onclick = async () => {
             const newName = content.querySelector('#kiptify-edit-name').value.trim();
-            if (newName) {
-                await renameFormState(formId, state.uid, newName, state.delayOverride, state.restoreHidden);
-                showToast('Entry updated!', 'success');
-                updateCallback();
-                closeModal();
+            if (!newName) {
+                showToast('Entry name cannot be empty.', 'error');
+                return;
             }
+
+            const newData = {};
+            const fieldRows = fieldsContainer.querySelectorAll('.kiptify-edit-field-row');
+            let hasError = false;
+            fieldRows.forEach(row => {
+                const key = row.querySelector('.kiptify-edit-key').value.trim();
+                const value = row.querySelector('.kiptify-edit-value').value;
+                const label = row.querySelector('.kiptify-edit-label').value.trim();
+                if (key) {
+                    if (newData.hasOwnProperty(key)) {
+                        showToast(`Duplicate field name: ${key}`, 'error');
+                        hasError = true;
+                    }
+                    newData[key] = { value, label };
+                }
+            });
+
+            if (hasError) return;
+
+            const updatedState = { ...state, name: newName, data: newData };
+
+            await updateFormState(formId, updatedState);
+            showToast('Entry updated!', 'success');
+            updateCallback();
+            closeModal();
         };
     }
 
-    function createSaveItemRow(state, formId, isGlobal, currentFormId, updateCallback) {
+    function createSaveItemRow(state, formId, isGlobal, currentFormId, form, updateCallback) {
         const item = document.createElement('div');
         item.className = 'kiptify-row';
 
@@ -443,7 +623,7 @@
 
         const restoreIconBtn = createBtn('restore', 'Restore', 'restore', 'large', restoreAction);
 
-        buttons.appendChild(createBtn('edit', 'Edit Name', 'edit', 'small', () => showEditModal(formId, state, updateCallback)));
+        buttons.appendChild(createBtn('edit', 'Edit', 'edit', 'small', () => showAdvancedEditModal(formId, state, form, updateCallback)));
         buttons.appendChild(createBtn('delete', 'Delete Entry', 'delete', 'small', async () => {
             if (confirm(`Delete "${state.name}"? This cannot be undone.`)) {
                 await deleteFormState(formId, state.uid);
@@ -470,13 +650,18 @@
         menu.innerHTML = `
             <div class="kiptify-menu-header">
                 <h3 class="font-brand kiptify-menu-title">Kiptify<span class="kiptify-title-dot">.</span></h3>
-                <div class="kiptify-save-btn-group">
-                    <button type="button" id="kiptify-save-btn">
-                        <span class="material-icons">save</span>Save Form
+                <div style="display: flex; gap: 0.5rem;">
+                    <button type="button" id="kiptify-add-custom-btn" class="kiptify-btn kiptify-btn-secondary" style="padding: 0.5rem 0.75rem;">
+                        <span class="material-icons-outlined" style="font-size: 1.125rem;">add</span>
                     </button>
-                    <button type="button" id="kiptify-save-options-toggle">
-                        <span class="material-icons">expand_more</span>
-                    </button>
+                    <div class="kiptify-save-btn-group">
+                        <button type="button" id="kiptify-save-btn">
+                            <span class="material-icons">save</span>Save Form
+                        </button>
+                        <button type="button" id="kiptify-save-options-toggle">
+                            <span class="material-icons">expand_more</span>
+                        </button>
+                    </div>
                 </div>
             </div>
             <div id="kiptify-save-accordion" class="save-accordion">
@@ -544,7 +729,7 @@
             if (states.length === 0) {
                 container.innerHTML = `<p class="kiptify-no-entries-msg">${isGlobal ? 'No matches found.' : 'No entries saved yet.'}</p>`;
             } else {
-                states.forEach(state => container.appendChild(createSaveItemRow(state, isGlobal ? state.formId : identifier, isGlobal, identifier, renderAll)));
+                states.forEach(state => container.appendChild(createSaveItemRow(state, isGlobal ? state.formId : identifier, isGlobal, identifier, form, renderAll)));
             }
         };
 
@@ -620,6 +805,10 @@
             await saveFormState(form, identifier, dataToSave, null, 0, prefs.saveHidden);
             renderAll();
             showToast('State saved!', 'success');
+        };
+
+        menu.querySelector('#kiptify-add-custom-btn').onclick = () => {
+            showAddCustomModal(identifier, form, renderAll);
         };
 
         switchTab('entries');
